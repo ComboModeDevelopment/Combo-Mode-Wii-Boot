@@ -47,9 +47,9 @@
 #include <limits.h>
 
 const int THREAD_SLEEP_MS(100);
-static bool g_bHaltGUI = false;
-static bool g_bGUIThreadIsSleeping = false;
-static bool g_bExitRequested = false;
+static volatile bool g_bHaltGUI = false;
+static volatile bool g_bGUIThreadIsSleeping = false;
+static volatile bool g_bExitRequested = false;
 static bool g_networkStarted = false;
 
 #define HBC_LULZ            0x000100014c554c5aULL
@@ -323,6 +323,9 @@ namespace UIThread
 
     void* UpdateGUI(void*)
     {
+        // This thread generates all GX commands, but GX_Init ran on main. Make this the GX
+        // thread so libogc suspends it (not main) if the FIFO reaches its high watermark.
+        GX_SetCurrentGXThread();
         while (true)
         {
             while (g_bHaltGUI)
@@ -763,7 +766,7 @@ Menu:
         g_pCurrentScene->Load();
 
 
-        LWP_CreateThread(&UIThread::guithread, UIThread::UpdateGUI, NULL, NULL, 0, 64);
+        LWP_CreateThread(&UIThread::guithread, UIThread::UpdateGUI, NULL, NULL, 64 * 1024, 64);
 
         UIThread::ResumeGUI();
 
@@ -814,6 +817,7 @@ Menu:
         UIThread::HaltGUI();
         g_bExitRequested = true;
         LWP_JoinThread(UIThread::guithread, NULL);
+        GX_SetCurrentGXThread(); // main draws the fade-out below
 
         for (int i = 0; i <= 255; i += 15)
         {

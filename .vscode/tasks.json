@@ -1,0 +1,38 @@
+{
+    "version": "2.0.0",
+    "options": {
+        "env": { "MSYSTEM": "MSYS" }
+    },
+    "tasks": [
+        {
+            "label": "Build Launcher",
+            "type": "process",
+            "command": "C:\\devkitPro\\msys2\\usr\\bin\\bash.exe",
+            "args": ["-l", "${workspaceFolder}\\.vscode\\build.sh", "-j8"],
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": { "base": "$gcc", "fileLocation": "absolute" }
+        },
+        {
+            // clean and build as separate steps: "make clean all -j8" can race
+            "label": "Rebuild Launcher",
+            "dependsOn": ["Clean Launcher", "Build Launcher"],
+            "dependsOrder": "sequence",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Clean Launcher",
+            "type": "process",
+            "command": "C:\\devkitPro\\msys2\\usr\\bin\\bash.exe",
+            "args": ["-l", "${workspaceFolder}\\.vscode\\build.sh", "clean"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Build Textures",
+            "type": "process",
+            "command": "C:\\devkitPro\\msys2\\usr\\bin\\bash.exe",
+            "args": ["-l", "${workspaceFolder}\\.vscode\\build.sh", "textures"],
+            "problemMatcher": []
+        }
+    ]
+}

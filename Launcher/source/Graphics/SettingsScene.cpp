@@ -45,8 +45,12 @@ void CSettingsScene::Load()
 	m_eNextScreen = SCENE_SETTINGS;
 
 	InitializeSettings();
-	LoadConfigXml();
-	LoadLoaderCfg();
+	// InitializeSettings leaves the list empty when no codespath was given
+	if (!m_vSettings.empty())
+	{
+		LoadConfigXml();
+		LoadLoaderCfg();
+	}
 
 	m_iMenuSelectedIndex = 0;
 	m_bIsLoaded = true;
@@ -64,6 +68,11 @@ void CSettingsScene::Unload()
 {
 	if (!m_bIsLoaded)
 		return;
+
+	// Save here rather than from HandleInputs: Unload runs on the main thread while the
+	// GUI thread is halted, so the SD/XML work doesn't run on the GUI thread's stack
+	if (!m_vSettings.empty())
+		SaveSettings();
 
 	m_vSettings.clear();
 	delete autoBootInfoPopup;
@@ -231,6 +240,11 @@ void CSettingsScene::LoadLoaderCfg()
 	fileBuffer[bytesRead] = '\0';
 	fclose(file);
 
+	// Remember the defaults so out-of-range values from the file can be rejected
+	std::vector<int> defaultValues;
+	for (size_t i = 0; i < m_vSettings.size(); i++)
+		defaultValues.push_back(m_vSettings[i].currentValue);
+
 	char *line = fileBuffer;
 	char *nextLine;
 
@@ -317,6 +331,17 @@ void CSettingsScene::LoadLoaderCfg()
 	}
 
 	free(fileBuffer);
+
+	for (size_t i = 0; i < m_vSettings.size(); i++)
+	{
+		SSetting &setting = m_vSettings[i];
+		if (setting.options.empty())
+			continue;
+
+		int value = setting.currentValue;
+		if (value < 0 || value >= (int)setting.options.size() || setting.options[value].empty())
+			setting.currentValue = defaultValues[i];
+	}
 }
 
 void CSettingsScene::LoadConfigXml()
@@ -663,7 +688,7 @@ void CSettingsScene::ResetSettingsToDefaults()
 	m_vSettings[SETTING_NANDEMUPATH].currentValue = 0;           // SD
 	m_vSettings[SETTING_DEBUG_TO_FILE].currentValue = 0;         // OFF
 
-	SaveSettings();
+	// Written to SD when leaving the scene (see Unload)
 }
 
 const wchar_t* CSettingsScene::GetCurrentValueText(int index)
@@ -822,7 +847,7 @@ void CSettingsScene::HandleInputs(u32 gcPressed, s8 stickX, s8 stickY, s8 substi
 
 	if ((gcPressed & PAD_BUTTON_B) || (wiiPressed & WPAD_BUTTON_B))
 	{
-		SaveSettings();
+		// Settings are saved in Unload()
 		m_eNextScreen = SCENE_MAIN_MENU;
 		playSFX(SFX_BACK);
 		return;

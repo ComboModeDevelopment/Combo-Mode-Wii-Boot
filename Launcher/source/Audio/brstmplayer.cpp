@@ -542,7 +542,7 @@ void* playThreadFunc(void*)
 
 void BrstmPlayer::Play()
 {
-	LWP_CreateThread(&playthread, playThreadFunc, NULL, NULL, 0, 96);
+	LWP_CreateThread(&playthread, playThreadFunc, NULL, NULL, 32 * 1024, 96);
 	LWP_ResumeThread(playthread);
 	//playStream(this->trackLength, offset, voice, pitch, sound);
 }

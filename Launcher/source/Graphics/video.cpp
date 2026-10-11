@@ -171,6 +171,10 @@ InitVideo()
 	xfb[1] = (u32 *)MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
 	gp_fifo = memalign(32, DEFAULT_FIFO_SIZE);
 	memset(gp_fifo, 0, DEFAULT_FIFO_SIZE);
+	// Write the zeros back and drop them from the cache. GX commands reach the FIFO through
+	// the write-gather pipe, bypassing the cache, so any dirty lines left from the memset
+	// would later be evicted on top of live commands and hang the GPU at random.
+	DCFlushRange(gp_fifo, DEFAULT_FIFO_SIZE);
 	GX_Init(gp_fifo, DEFAULT_FIFO_SIZE);
 	GXColor background = { 0, 0, 0, 0xff };
 	GX_SetCopyClear(background, 0x00ffffff);

@@ -39,6 +39,8 @@ bool networkThreadComplete = false;
 bool Network_Init()
 {
 	newsText = (wchar_t*)malloc(sizeof(wchar_t)* 4096);
+	if (newsText)
+		newsText[0] = L'\0';
 	return true;
 }
 

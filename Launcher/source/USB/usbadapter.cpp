@@ -220,7 +220,7 @@ void USBAdapter_ReadBackgroundCallBack()
 
 void USBAdapter_Start()
 {
-	LWP_CreateThread(&usbAdapterThread, usbAdapterThreadFunction, NULL, NULL, 0, 16);
+	LWP_CreateThread(&usbAdapterThread, usbAdapterThreadFunction, NULL, NULL, 32 * 1024, 16);
 	LWP_ResumeThread(usbAdapterThread);
 }
 

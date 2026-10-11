@@ -456,8 +456,13 @@ uint16_t FreeTypeGX::drawText(int16_t x, int16_t y, wchar_t *text, GXColor color
 				x_pos += pairDelta.x >> 6;
 			}
 
-			GX_InitTexObj(&glyphTexture, glyphData->glyphDataTexture, glyphData->textureWidth, glyphData->textureHeight, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
-			this->copyTextureToFramebuffer(&glyphTexture, glyphData->textureWidth, glyphData->textureHeight, x_pos + glyphData->renderOffsetX + x_offset, y - glyphData->renderOffsetY + y_offset, color);
+			// Glyphs with no bitmap (e.g. space) are 0x0 with no texture data. GX encodes a 0 size
+			// as 1024, so drawing them would point a 1024x1024 texture at garbage: only advance.
+			if (glyphData->glyphDataTexture && glyphData->textureWidth && glyphData->textureHeight)
+			{
+				GX_InitTexObj(&glyphTexture, glyphData->glyphDataTexture, glyphData->textureWidth, glyphData->textureHeight, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+				this->copyTextureToFramebuffer(&glyphTexture, glyphData->textureWidth, glyphData->textureHeight, x_pos + glyphData->renderOffsetX + x_offset, y - glyphData->renderOffsetY + y_offset, color);
+			}
 			//drawTexturedBox(&glyphTexture, x_pos + glyphData->renderOffsetX + x_offset, y - glyphData->renderOffsetY + y_offset, glyphData->textureWidth, glyphData->textureHeight, 255, 255, 255, 255);
 
 

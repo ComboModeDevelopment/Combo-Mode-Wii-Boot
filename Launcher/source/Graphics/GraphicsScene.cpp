@@ -28,14 +28,16 @@ void GraphicsScene::drawNewsBox(f32 & yPos, f32 offset, f32 height)
 		if (!fontSystem[24])
 			fontSystem[24] = new FreeTypeGX(24);
 
-		wchar_t * wText = (wchar_t*)malloc(sizeof(wchar_t)* 4096);
-		swprintf(wText, 4096, newsText);
+		// Copy, never use as a format string: the network thread rewrites newsText at any
+		// time and downloaded news may contain '%'. Static buffer avoids a 16KB alloc per frame.
+		static wchar_t wText[4096];
+		wcsncpy(wText, newsText, 4095);
+		wText[4095] = L'\0';
 		float fNewsTextWidth = fontSystem[24]->getWidth(wText);
 		float startOffset = m_fScreenWidth;
 		float endOffset = -1 * fNewsTextWidth - (m_fScreenWidth / 2.0f); //extra padding
 		f32 newsTextAanimationRatio = (f32)m_fCurrentNewsScrollFrame / (f32)m_fMaxNewsScrollFrames;
 		fontSystem[24]->drawText((endOffset - startOffset) * newsTextAanimationRatio + startOffset, yPos + offset, wText, (GXColor){ 0xff, 0xff, 0xff, 0xff }, FTGX_JUSTIFY_LEFT | FTGX_ALIGN_MIDDLE);
-		delete wText;
 	}
 
 	yPos += 65.0f / 2.0f;
