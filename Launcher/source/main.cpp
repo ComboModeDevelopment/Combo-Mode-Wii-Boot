@@ -726,29 +726,42 @@ Menu:
 	BrstmPlayer* pMusicPlayer = NULL;
 	if (useMusic)
 	{
-		// Build the path to launcher.brstm using codespath
-		char brstmPath[ISFS_MAXPATH];
-		if (infoMusicPath[0])
-			snprintf(brstmPath, sizeof(brstmPath), "%s/pf/sound/strm/%s", codesBasePath, infoMusicPath);
-		else
-			snprintf(brstmPath, sizeof(brstmPath), "%s/pf/sound/strm/project m/launcher.brstm", codesBasePath);
-	
-		FileHolder brstmFile(brstmPath, "rb");
-		if (brstmFile.IsOpen())
+		// musicPath in info.xml is relative to the strm folder. Mods use either the Project+
+		// layout (<codespath>/pf/...) or the rsbe layout (<codespath>/rsbe/pf/...), so try
+		// both. A full path (containing ':', e.g. "sd:/...") is used as-is.
+		const char *musicPath = infoMusicPath[0] ? infoMusicPath : "project m/launcher.brstm";
+		char brstmPaths[2][256];
+		int brstmPathCount = 0;
+		if (strchr(musicPath, ':'))
 		{
+			snprintf(brstmPaths[brstmPathCount++], sizeof(brstmPaths[0]), "%s", musicPath);
+		}
+		else
+		{
+			snprintf(brstmPaths[brstmPathCount++], sizeof(brstmPaths[0]), "%s/pf/sound/strm/%s", codesBasePath, musicPath);
+			snprintf(brstmPaths[brstmPathCount++], sizeof(brstmPaths[0]), "%s/rsbe/pf/sound/strm/%s", codesBasePath, musicPath);
+		}
+
+		for (int i = 0; i < brstmPathCount && !pMusicPlayer; i++)
+		{
+			FileHolder brstmFile(brstmPaths[i], "rb");
+			if (!brstmFile.IsOpen())
+				continue;
+
 			int len = brstmFile.Size();
 			u8 *brstmData = (u8*)malloc(len);
-	
+			if (!brstmData)
+				break;
+
 			brstmFile.FRead(brstmData, len, 1);
 			brstmFile.FClose();
 			pMusicPlayer = new BrstmPlayer(brstmData, len);
 			pMusicPlayer->Init();
 			pMusicPlayer->Play();
 		}
-		else
-		{
+
+		if (!pMusicPlayer)
 			pMusicPlayer = new BrstmPlayer(NULL, 0);
-		}
 	}
 
 
